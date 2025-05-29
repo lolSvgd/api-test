@@ -5,7 +5,7 @@ import { default as chaiHttp, request } from "chai-http";
 chai.use(chaiHttp);
 const { expect } = chai;
 
-const BASE_URL = process.env.FASTAPI_URL;
+const BASE_URL = process.env.FASTAPI_URL || 'http://localhost:8000';
 
 describe("Auth API", () => {
   let authToken = "";

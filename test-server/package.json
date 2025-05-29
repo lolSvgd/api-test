@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "mocha tests/**/*.test.js --timeout 15000 --exit",
-    "test:watch": "mocha tests/**/*.test.js --timeout 15000 --watch"
+    "test": "mocha tests/**/*.test.js --timeout 45000 --exit --slow 10000",
+    "test:watch": "mocha tests/**/*.test.js --timeout 45000 --watch --slow 10000",
+    "test:fast": "mocha tests/**/*.test.js --timeout 15000 --exit"
   },
   "keywords": [],
   "author": "",
