@@ -31,7 +31,6 @@ jobs:
       - image: cimg/python:3.13-node
     steps:
       - checkout
-      
       # Setup Python/FastAPI
       - run:
           name: Install Poetry and dependencies
@@ -39,12 +38,10 @@ jobs:
             curl -sSL https://install.python-poetry.org | python3 -
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> $BASH_ENV
             poetry install
-      
       # Setup Node.js test server
       - node/install-packages:
           app-dir: tests
-          pkg-manager: npm install
-      
+          pkg-manager: npm
       # Start FastAPI server in background
       - run:
           name: Start FastAPI server
@@ -53,14 +50,12 @@ jobs:
           background: true
           environment:
             MONGO_URL: $MONGO_URL
-      
       # Wait for FastAPI to be ready
       - run:
           name: Wait for FastAPI server to be ready
           command: |
             timeout 60 bash -c 'until curl -f http://localhost:8000/; do echo "Waiting for FastAPI..."; sleep 2; done'
             echo "FastAPI server is ready!"
-      
       # Run endpoint tests via Node.js test server
       - run:
           name: Run API endpoint tests
