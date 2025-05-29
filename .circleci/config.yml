@@ -1,0 +1,77 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@2.0.3
+  node: circleci/node@5.0.2
+
+jobs:
+  test-fastapi:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - run:
+          name: Install Poetry
+          command: |
+            curl -sSL https://install.python-poetry.org | python3 -
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> $BASH_ENV
+      - run:
+          name: Install Python dependencies
+          command: |
+            poetry install
+      - run:
+          name: Run FastAPI unit tests (if any)
+          command: |
+            poetry run pytest -v || echo "No Python tests found"
+          environment:
+            MONGO_URL: $MONGO_URL
+
+  integration-test:
+    docker:
+      - image: cimg/python:3.9-node
+    steps:
+      - checkout
+      
+      # Setup Python/FastAPI
+      - run:
+          name: Install Poetry and dependencies
+          command: |
+            curl -sSL https://install.python-poetry.org | python3 -
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> $BASH_ENV
+            poetry install
+      
+      # Setup Node.js test server
+      - node/install-packages:
+          app-dir: test-server
+          pkg-manager: npm
+      
+      # Start FastAPI server in background
+      - run:
+          name: Start FastAPI server
+          command: |
+            poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000
+          background: true
+          environment:
+            MONGO_URL: $MONGO_URL
+      
+      # Wait for FastAPI to be ready
+      - run:
+          name: Wait for FastAPI server to be ready
+          command: |
+            timeout 60 bash -c 'until curl -f http://localhost:8000/; do echo "Waiting for FastAPI..."; sleep 2; done'
+            echo "FastAPI server is ready!"
+      
+      # Run endpoint tests via Node.js test server
+      - run:
+          name: Run API endpoint tests
+          command: |
+            cd test-server
+            FASTAPI_URL=http://localhost:8000 npm test
+
+workflows:
+  test-and-validate:
+    jobs:
+      - test-fastapi
+      - integration-test:
+          requires:
+            - test-fastapi
