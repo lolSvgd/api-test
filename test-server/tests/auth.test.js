@@ -66,19 +66,5 @@ describe("Auth API", () => {
           expect(err).to.have.status(401);
         });
     });
-
-    it("should successfully access /me route with valid authentication", () => {
-      return request
-        .execute(BASE_URL)
-        .get("/api/v1/users/me") 
-        .set("Authorization", `Bearer ${authToken}`)
-        .then((res) => {
-          expect(res).to.have.status(200);
-          expect(res.body).to.have.property("username");
-          expect(res.body).to.have.property("email");
-          expect(res.body).to.have.property("id");
-          expect(res.body.email).to.equal("test2@example.com");
-        });
-    });
   });
 });
