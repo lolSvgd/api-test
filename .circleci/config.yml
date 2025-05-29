@@ -7,8 +7,8 @@ orbs:
 jobs:
   test-fastapi:
     docker:
-      - image: cimg/python:3.9  # Changed from 3.13 to 3.9 for better compatibility
-      - image: cimg/mongo:5.0
+      - image: cimg/python:3.9
+      - image: mongo:5.0  # Use official MongoDB image instead
     steps:
       - checkout
       - run:
@@ -30,12 +30,12 @@ jobs:
           command: |
             poetry run pytest -v || echo "No Python tests found"
           environment:
-            MONGO_URL: $MONGO_URL
+            MONGO_URL: mongodb://localhost:27017/test_db
 
   integration-test:
     docker:
-      - image: cimg/python:3.9-node  # Changed from 3.13 to 3.9
-      - image: cimg/mongo:5.0  # Added MongoDB service for integration tests
+      - image: cimg/python:3.9-node
+      - image: mongo:5.0  # Use official MongoDB image instead
     steps:
       - checkout
       
@@ -70,7 +70,7 @@ jobs:
       - run:
           name: Start FastAPI server
           command: |
-            export MONGO_URL="${MONGO_URL:-mongodb://localhost:27017/test_db}"
+            export MONGO_URL="mongodb://localhost:27017/test_db"
             echo "Starting FastAPI with MONGO_URL: $MONGO_URL"
             poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000
           background: true
