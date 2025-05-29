@@ -42,7 +42,7 @@ jobs:
       
       # Setup Node.js test server
       - node/install-packages:
-          app-dir: tests
+          app-dir: test-server
           pkg-manager: npm 
       
       # Start FastAPI server in background
@@ -65,7 +65,7 @@ jobs:
       - run:
           name: Run API endpoint tests
           command: |
-            cd tests
+            cd test-server
             FASTAPI_URL=http://localhost:8000 npm test
 
 workflows:
