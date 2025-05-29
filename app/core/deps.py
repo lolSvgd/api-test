@@ -6,13 +6,13 @@ from jwt import PyJWTError
 from bson import ObjectId
 from app.core.security import verify_token
 from app.db.mongo import db
-from app.models.user import UserInDB
+from app.models.user import UserInDB, UserPublic
 
 logger = logging.getLogger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserPublic:  
     logger.debug("Received token for validation.")
     try:
         payload = verify_token(token)
@@ -39,9 +39,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
         logger.warning("No user found in DB for id: %s", user_id)
         raise HTTPException(status_code=401, detail="User not found")
     
-    # Convert ObjectId to string before creating the model
-    if "_id" in user:
-        user["_id"] = str(user["_id"])
+    # Create UserInDB instance, then convert to UserPublic
+    user_in_db = UserInDB(**user)
+    user_public = UserPublic.from_user_in_db(user_in_db)
     
     logger.info("User authenticated successfully: %s", user_id)
-    return UserInDB(**user)
+    return user_public

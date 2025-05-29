@@ -1,10 +1,11 @@
-from pydantic import BaseModel, EmailStr, Field, GetJsonSchemaHandler, constr
+from pydantic import BaseModel, EmailStr, Field, GetJsonSchemaHandler, constr, ConfigDict
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import core_schema
 from typing import Optional, Any
 from bson import ObjectId
 
 class PyObjectId(ObjectId):
+# handles MongoDB ObjectId serialization.
     @classmethod
     def __get_pydantic_core_schema__(
         cls, 
@@ -43,25 +44,43 @@ class PyObjectId(ObjectId):
 
 
 class UserBase(BaseModel):
+# Base user model.
     username: constr(min_length=3, max_length=20, pattern="^[a-zA-Z0-9_]+$")   # type: ignore
     email: EmailStr
 
 
 class UserCreate(UserBase):
-    password: constr(min_length=8, max_length=64) # type: ignore
+# User registration model.
+    password: constr(min_length=8, max_length=64)  # type: ignore
+
 
 class UserInDB(UserBase):
+#User model for database operations.
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     hashed_password: str
 
-    class Config:
-        allow_population_by_field_name = True
-        json_encoders = {ObjectId: str}
-        arbitrary_types_allowed = True
+
+    model_config = ConfigDict(
+        populate_by_name=True, 
+        arbitrary_types_allowed=True
+    )
+
 
 class UserPublic(UserBase):
+# Public user model for API responses without sensitive data.
     id: str
 
+    @classmethod
+    def from_user_in_db(cls, user_in_db: UserInDB) -> "UserPublic":
+        """Convert UserInDB to UserPublic"""
+        return cls(
+            id=str(user_in_db.id),
+            username=user_in_db.username,
+            email=user_in_db.email
+        )
+
+
 class LoginRequest(BaseModel):
+# Login request model.
     email: EmailStr
     password: str
