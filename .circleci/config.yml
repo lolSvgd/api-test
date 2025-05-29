@@ -65,7 +65,7 @@ jobs:
       - run:
           name: Run API endpoint tests
           command: |
-            cd test-server
+            cd tests
             FASTAPI_URL=http://localhost:8000 npm test
 
 workflows:
