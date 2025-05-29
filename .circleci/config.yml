@@ -7,8 +7,7 @@ orbs:
 jobs:
   test-fastapi:
     docker:
-      - image: cimg/python:3.9
-      - image: mongo:5.0  # Use official MongoDB image instead
+      - image: cimg/python:3.13
     steps:
       - checkout
       - run:
@@ -16,11 +15,6 @@ jobs:
           command: |
             curl -sSL https://install.python-poetry.org | python3 -
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> $BASH_ENV
-      - run:
-          name: Wait for MongoDB to be ready
-          command: |
-            timeout 60 bash -c 'until nc -z localhost 27017; do echo "Waiting for MongoDB..."; sleep 2; done'
-            echo "MongoDB is ready!"
       - run:
           name: Install Python dependencies
           command: |
@@ -30,21 +24,13 @@ jobs:
           command: |
             poetry run pytest -v || echo "No Python tests found"
           environment:
-            MONGO_URL: mongodb://localhost:27017/test_db
+            MONGO_URL: $MONGO_URL
 
   integration-test:
     docker:
-      - image: cimg/python:3.9-node
-      - image: mongo:5.0  # Use official MongoDB image instead
+      - image: cimg/python:3.13-node
     steps:
       - checkout
-      
-      # Debug environment variables
-      - run:
-          name: Debug environment variables
-          command: |
-            echo "MONGO_URL from CircleCI: $MONGO_URL"
-            echo "Will use local MongoDB: mongodb://localhost:27017/test_db"
       
       # Setup Python/FastAPI
       - run:
@@ -59,21 +45,14 @@ jobs:
           app-dir: test-server
           pkg-manager: npm 
       
-      # Wait for MongoDB
-      - run:
-          name: Wait for MongoDB to be ready
-          command: |
-            timeout 60 bash -c 'until nc -z localhost 27017; do echo "Waiting for MongoDB..."; sleep 2; done'
-            echo "MongoDB is ready!"
-      
       # Start FastAPI server in background
       - run:
           name: Start FastAPI server
           command: |
-            export MONGO_URL="mongodb://localhost:27017/test_db"
-            echo "Starting FastAPI with MONGO_URL: $MONGO_URL"
             poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000
           background: true
+          environment:
+            MONGO_URL: $MONGO_URL
       
       # Wait for FastAPI to be ready
       - run:
