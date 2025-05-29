@@ -42,7 +42,7 @@ jobs:
       
       # Setup Node.js test server
       - node/install-packages:
-          app-dir: test-server
+          app-dir: tests
           pkg-manager: npm
       
       # Start FastAPI server in background
