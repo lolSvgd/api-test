@@ -70,7 +70,7 @@ describe("Auth API", () => {
     it("should successfully access /me route with valid authentication", () => {
       return request
         .execute(BASE_URL)
-        .get("/api/v1/users/me")
+        .get("/api/v1/users/me") 
         .set("Authorization", `Bearer ${authToken}`)
         .then((res) => {
           expect(res).to.have.status(200);
