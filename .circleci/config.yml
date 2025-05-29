@@ -16,15 +16,14 @@ jobs:
             curl -sSL https://install.python-poetry.org | python3 -
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> $BASH_ENV
       - run:
-          name: Install Python dependencies
+          name: Install Python dependencies and certificates
           command: |
             poetry install
+            poetry add certifi
       - run:
           name: Run FastAPI unit tests (if any)
           command: |
             poetry run pytest -v || echo "No Python tests found"
-          environment:
-            MONGO_URL: $MONGO_URL
 
   integration-test:
     docker:
@@ -39,16 +38,47 @@ jobs:
             curl -sSL https://install.python-poetry.org | python3 -
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> $BASH_ENV
             poetry install
+            poetry add certifi
       
       # Setup Node.js test server
       - node/install-packages:
           app-dir: test-server
           pkg-manager: npm 
       
+      # Test MongoDB connection before starting FastAPI
+      - run:
+          name: Test MongoDB Atlas connection
+          command: |
+            python3 -c "
+            import pymongo
+            import certifi
+            import os
+            import ssl
+            
+            print('Testing MongoDB connection...')
+            try:
+                client = pymongo.MongoClient(
+                    os.environ['MONGO_URL'],
+                    tls=True,
+                    tlsCAFile=certifi.where(),
+                    tlsAllowInvalidHostnames=False,
+                    serverSelectionTimeoutMS=10000,
+                    socketTimeoutMS=20000,
+                    connectTimeoutMS=20000
+                )
+                client.admin.command('ping')
+                print('✅ MongoDB connection successful!')
+                client.close()
+            except Exception as e:
+                print(f'❌ MongoDB connection failed: {e}')
+                exit(1)
+            "
+      
       # Start FastAPI server in background
       - run:
           name: Start FastAPI server
           command: |
+            export SSL_CERT_DIR=/etc/ssl/certs
             poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000
           background: true
       
@@ -59,7 +89,7 @@ jobs:
             timeout 60 bash -c 'until curl -f http://localhost:8000/; do echo "Waiting for FastAPI..."; sleep 2; done'
             echo "FastAPI server is ready!"
       
-      # Run endpoint tests via Node.js test server
+      # Run endpoint tests
       - run:
           name: Run API endpoint tests
           command: |
