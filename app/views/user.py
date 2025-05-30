@@ -1,7 +1,7 @@
 from fastapi import Depends, APIRouter, HTTPException
 from app.core.deps import get_current_user
 from app.models.user import UserCreate, UserPublic
-from app.services.user_service import create_user, get_user_by_email
+from app.controllers.user_service import create_user, get_user_by_email
 
 router = APIRouter()
 

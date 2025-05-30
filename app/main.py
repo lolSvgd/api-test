@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import user, auth 
+from app.views import user, auth 
 app = FastAPI(
     title="FastAPI MongoDB Auth App",
     version="1.0.0",
